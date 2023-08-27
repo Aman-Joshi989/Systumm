@@ -7,14 +7,14 @@ from .serializers import VideoSerializer, SubtitleSerializer
 from rest_framework.parsers import FileUploadParser
 from rest_framework import status
 from rest_framework.decorators import api_view
-
+from django.conf import settings 
 
 class UploadVideoView(APIView):
     parser_classes = (FileUploadParser,)
-    permission_classes = [IsAuthenticated] 
+    #permission_classes = [IsAuthenticated] 
 
     def post(self, request):
-        video_file = request.data['file']  # Assuming you are using 'file' as the field name
+        video_file = request.data['video']  # Assuming you are using 'file' as the field name
         # Process the video file, save it, and return a response
         return Response({'message': 'Video uploaded successfully'}, status=status.HTTP_201_CREATED)
         
@@ -23,11 +23,15 @@ class VideoUploadView(APIView):
     parser_classes = (FileUploadParser,)
 
     def post(self, request):
-        video_file = request.FILES.get('video')
+        video_file = request.data.get('file')
         title = request.data.get('title', '')
+        if not title:
+            title = request.query_params.get('title','')
         
         if video_file:
             video = Video.objects.create(title=title, video_file=video_file)
+            video.video_url = settings.MEDIA_URL + str(video.video_file)
+            video.save()
             return Response({'message': 'Video uploaded successfully'}, status=201)
         else:
             return Response({'error': 'No video file provided'}, status=400)
